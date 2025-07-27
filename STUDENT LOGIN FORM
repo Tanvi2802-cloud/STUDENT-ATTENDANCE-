@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>All-in-One Attendance System</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .hidden { display: none; }
+    .marked { background-color: lightgreen; }
+    .disabled { background-color: lightgray; pointer-events: none; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid black; padding: 10px; text-align: left; }
+    button { padding: 8px 12px; margin: 5px; }
+  </style>
+</head>
+<body>
+
+<h2>🎓 College Attendance System</h2>
+
+<!-- Login Selection -->
+<div id="loginSelection">
+  <button onclick="showStudentLogin()">Student Login</button>
+  <button onclick="showTeacherPanel()">Teacher Login</button>
+</div>
+
+<!-- Student OTP & Attendance -->
+<div id="studentSection" class="hidden">
+  <h3>Student Login</h3>
+  <div id="otpPart">
+    <label>Enter OTP (ask your teacher): </label>
+    <input type="text" id="otpInput">
+    <button onclick="verifyOtp()">Verify OTP</button>
+  </div>
+
+  <div id="formPart" class="hidden">
+    <label>Name:</label> <input type="text" id="name"><br><br>
+    <label>Roll No:</label> <input type="text" id="rollNo"><br><br>
+    <label>Student ID:</label> <input type="text" id="studentId"><br><br>
+    <label>Select Subject:</label>
+    <select id="subject">
+      <option value="">--Select--</option>
+      <option>Python</option>
+      <option>Data Structure</option>
+      <option>Computer Network</option>
+      <option>Marathi</option>
+      <option>Applied Maths</option>
+    </select><br><br>
+
+    <p><strong>Today's Date:</strong> <span id="todayDate"></span></p>
+
+    <table id="attendanceTable">
+      <tr><th>Date</th><th>Attendance</th></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Teacher Panel -->
+<div id="teacherSection" class="hidden">
+  <h3>Teacher Panel - Today's Attendance</h3>
+  <table id="recordTable">
+    <tr>
+      <th>Name</th><th>Roll No</th><th>ID</th><th>Subject</th><th>Date</th>
+    </tr>
+  </table>
+</div>
+
+<script>
+  const correctOtp = "1234"; // teacher-defined OTP
+  const today = new Date();
+  const todayDate = today.getDate();
+  const thisMonth = 6; // July
+  const thisYear = 2025;
+  document.getElementById("todayDate").innerText = today.toDateString();
+
+  function showStudentLogin() {
+    document.getElementById("loginSelection").classList.add("hidden");
+    document.getElementById("studentSection").classList.remove("hidden");
+  }
+
+  function showTeacherPanel() {
+    document.getElementById("loginSelection").classList.add("hidden");
+    document.getElementById("teacherSection").classList.remove("hidden");
+    showAttendanceRecords();
+  }
+
+  function verifyOtp() {
+    const enteredOtp = document.getElementById("otpInput").value;
+    if (enteredOtp === correctOtp) {
+      document.getElementById("otpPart").classList.add("hidden");
+      document.getElementById("formPart").classList.remove("hidden");
+      generateAttendanceTable();
+    } else {
+      alert("❌ Incorrect OTP. Please ask your teacher again.");
+    }
+  }
+
+  function generateAttendanceTable() {
+    const table = document.getElementById("attendanceTable");
+    const daysInMonth = new Date(thisYear, thisMonth + 1, 0).getDate();
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const tr = document.createElement("tr");
+      const tdDate = document.createElement("td");
+      const tdBtn = document.createElement("td");
+
+      tdDate.innerText = `${d} July`;
+
+      if (d < todayDate) {
+        tdBtn.innerHTML = "<button class='disabled' disabled>Missed</button>";
+      } else if (d > todayDate) {
+        tdBtn.innerHTML = "<button class='disabled' disabled>Upcoming</button>";
+      } else {
+        const btn = document.createElement("button");
+        btn.innerText = "Mark Attendance";
+        btn.onclick = function () {
+          const name = document.getElementById("name").value.trim();
+          const roll = document.getElementById("rollNo").value.trim();
+          const id = document.getElementById("studentId").value.trim();
+          const subject = document.getElementById("subject").value;
+
+          if (!name || !roll || !id || !subject) {
+            alert("⚠️ Please fill all fields before marking attendance.");
+            return;
+          }
+
+          btn.innerText = "Present ✅";
+          btn.classList.add("marked");
+          btn.disabled = true;
+
+          const student = {
+            name, roll, id, subject,
+            date: today.toDateString()
+          };
+
+          let records = JSON.parse(localStorage.getItem("attendanceRecords")) || [];
+          records.push(student);
+          localStorage.setItem("attendanceRecords", JSON.stringify(records));
+
+          alert("✅ Attendance marked successfully!");
+        };
+        tdBtn.appendChild(btn);
+      }
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdBtn);
+      table.appendChild(tr);
+    }
+  }
+
+  function showAttendanceRecords() {
+    const table = document.getElementById("recordTable");
+    const records = JSON.parse(localStorage.getItem("attendanceRecords")) || [];
+    const todayStr = today.toDateString();
+
+    records.filter(r => r.date === todayStr).forEach(record => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${record.name}</td>
+        <td>${record.roll}</td>
+        <td>${record.id}</td>
+        <td>${record.subject}</td>
+        <td>${record.date}</td>
+      `;
+      table.appendChild(tr);
+    });
+
+    if (records.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="5">No attendance marked today.</td>`;
+      table.appendChild(tr);
+    }
+  }
+</script>
+
+</body>
+</html>
