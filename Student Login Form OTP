@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>College Attendance</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+    .section { display: none; margin-top: 20px; }
+    table, th, td { border: 1px solid #000; border-collapse: collapse; padding: 6px; }
+    input, select { padding: 5px; width: 200px; }
+  </style>
+</head>
+<body>
+  <h1>College Attendance System</h1>
+
+  <!-- Student Form -->
+  <div class="section" id="studentSection">
+    <h3>Student Attendance</h3>
+    <form id="form">
+      Roll No: <input id="roll"><br><br>
+      Name: <input id="name"><br><br>
+      Month:
+      <select id="month">
+        <option value="">--Select Month--</option>
+        <option>July</option><option>August</option><option>September</option>
+        <option>October</option><option>November</option><option>December</option>
+      </select><br><br>
+      Date (1–31): <input id="day" type="number" min="1" max="31"><br><br>
+      Lecture:
+      <select id="lecture">
+        <option value="">--Select Lecture--</option>
+        <option>Python</option><option>Computer Network</option>
+        <option>Data Structure</option><option>PL SQL</option>
+        <option>Practical</option><option>Applied Maths</option>
+      </select><br><br>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <!-- Teacher Dashboard -->
+  <div class="section" id="teacherSection">
+    <h3>Teacher Dashboard</h3>
+    <table id="table">
+      <thead><tr><th>Roll</th><th>Name</th><th>Lectures</th><th>%</th></tr></thead>
+      <tbody></tbody>
+    </table><br>
+    <button onclick="downloadPDF()">Download Defaulter List</button>
+  </div>
+
+  <!-- Login -->
+  <div>
+    <h3>Login</h3>
+    <button onclick="showStudent()">Student Login</button><br><br>
+    <input type="password" id="password" placeholder="Teacher Password">
+    <button onclick="teacherLogin()">Teacher Login</button>
+  </div>
+
+  <script>
+    const data = {}, total = 30 * 6;
+
+    document.getElementById("form").onsubmit = function(e) {
+      e.preventDefault();
+
+      let r = document.getElementById("roll").value.trim(),
+          n = document.getElementById("name").value.trim(),
+          d = document.getElementById("day").value,
+          l = document.getElementById("lecture").value,
+          m = document.getElementById("month").value;
+
+      if (!r || !n || d < 1 || d > 31 || !l || !m) {
+        alert("⚠️ Please fill all fields properly");
+        return;
+      }
+
+      let key = `${m}-${d}-${l}`;
+      if (!data[r]) data[r] = { name: n, lectures: new Set() };
+      if (data[r].lectures.has(key)) {
+        alert("❌ Already marked for this lecture");
+        return;
+      }
+
+      data[r].lectures.add(key);
+      alert(`✅ Attendance submitted successfully for ${l} (${m} ${d})`);
+      this.reset(); // reset form
+    };
+
+    function showStudent() {
+      document.getElementById("studentSection").style.display = "block";
+      document.getElementById("teacherSection").style.display = "none";
+    }
+
+    function teacherLogin() {
+      if (document.getElementById("password").value === "admin123") {
+        document.getElementById("studentSection").style.display = "none";
+        document.getElementById("teacherSection").style.display = "block";
+        let rows = "";
+        for (let r in data) {
+          let p = data[r].lectures.size,
+              per = ((p / total) * 100).toFixed(2);
+          rows += `<tr><td>${r}</td><td>${data[r].name}</td><td>${p}</td><td>${per}%</td></tr>`;
+        }
+        document.querySelector("#table tbody").innerHTML = rows;
+      } else {
+        alert("❌ Wrong password");
+      }
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Defaulter List (<25% Attendance)", 10, 10);
+      let y = 20;
+      for (let r in data) {
+        let p = data[r].lectures.size,
+            per = (p / total) * 100;
+        if (per < 25)
+          doc.text(`${r} - ${data[r].name} - ${p} lectures - ${per.toFixed(2)}%`, 10, y += 10);
+      }
+      doc.save("defaulter_list.pdf");
+    }
+  </script>
+</body>
+</html>
